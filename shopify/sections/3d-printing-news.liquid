@@ -1,0 +1,449 @@
+{%- comment -%}
+  RENDR FARM — 3D Printing News
+  Renders the weekly roundup written by scripts/build-news.mjs.
+
+  Data source, in order of preference:
+    1. shop.metafields.rendr.news_3d_printing  (server-rendered — preferred)
+    2. the "Fallback JSON URL" setting          (fetched in the browser)
+
+  See docs/3d-printing-news.md for setup.
+{%- endcomment -%}
+
+{%- liquid
+  assign news = shop.metafields.rendr.news_3d_printing.value
+  assign items = news.items
+  assign limit = section.settings.items_to_show
+  # `size` on a missing metafield yields 0, so this stays safe before the
+  # first run of the workflow.
+  assign item_count = items | size
+-%}
+
+<div
+  class="rf-news"
+  id="rf-news-{{ section.id }}"
+  {% if section.settings.json_url != blank %}data-json-url="{{ section.settings.json_url }}"{% endif %}
+  data-limit="{{ limit }}"
+  data-show-images="{{ section.settings.show_images }}"
+  data-show-source="{{ section.settings.show_source }}"
+  data-show-date="{{ section.settings.show_date }}"
+>
+  <div class="rf-news__inner">
+    {%- if section.settings.heading != blank -%}
+      <h2 class="rf-news__heading">{{ section.settings.heading | escape }}</h2>
+    {%- endif -%}
+
+    {%- if section.settings.subheading != blank -%}
+      <p class="rf-news__subheading">{{ section.settings.subheading | escape }}</p>
+    {%- endif -%}
+
+    {%- if item_count > 0 -%}
+      <ul class="rf-news__grid" role="list">
+        {%- for item in items limit: limit -%}
+          <li class="rf-news__card">
+            <a
+              class="rf-news__link"
+              href="{{ item.url }}"
+              target="_blank"
+              rel="noopener noreferrer nofollow"
+            >
+              {%- if section.settings.show_images and item.image != blank -%}
+                <span class="rf-news__thumb">
+                  <img
+                    src="{{ item.image }}"
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    referrerpolicy="no-referrer"
+                    onerror="this.closest('.rf-news__thumb').remove()"
+                  >
+                </span>
+              {%- endif -%}
+
+              <span class="rf-news__body">
+                <span class="rf-news__meta">
+                  {%- if section.settings.show_source -%}
+                    <span class="rf-news__source">{{ item.source }}</span>
+                  {%- endif -%}
+                  {%- if section.settings.show_date and item.publishedAt != blank -%}
+                    <time datetime="{{ item.publishedAt }}">
+                      {{- item.publishedAt | date: '%b %-d, %Y' -}}
+                    </time>
+                  {%- endif -%}
+                </span>
+
+                <span class="rf-news__title">{{ item.title }}</span>
+
+                {%- if item.summary != blank -%}
+                  <span class="rf-news__summary">{{ item.summary }}</span>
+                {%- endif -%}
+              </span>
+            </a>
+          </li>
+        {%- endfor -%}
+      </ul>
+
+      {%- if news.generatedAt != blank -%}
+        <p class="rf-news__updated">
+          Updated {{ news.generatedAt | date: '%B %-d, %Y' }}
+        </p>
+      {%- endif -%}
+
+    {%- elsif section.settings.json_url != blank -%}
+      <ul class="rf-news__grid" role="list" data-rf-news-target hidden></ul>
+      <p class="rf-news__updated" data-rf-news-updated hidden></p>
+      <p class="rf-news__empty" data-rf-news-empty>Loading the latest headlines…</p>
+
+    {%- else -%}
+      <p class="rf-news__empty">
+        No headlines yet — the weekly roundup will appear here once it runs.
+      </p>
+    {%- endif -%}
+  </div>
+</div>
+
+{%- style -%}
+  #shopify-section-{{ section.id }} .rf-news {
+    --rf-accent: {{ section.settings.accent_color }};
+    --rf-cols: {{ section.settings.columns_desktop }};
+    padding: {{ section.settings.padding_top }}px 1.5rem {{ section.settings.padding_bottom }}px;
+    background: {{ section.settings.background_color }};
+    color: {{ section.settings.text_color }};
+  }
+  #shopify-section-{{ section.id }} .rf-news__inner {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  #shopify-section-{{ section.id }} .rf-news__heading {
+    margin: 0 0 .5rem;
+    font-size: clamp(1.6rem, 3.4vw, 2.4rem);
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+  #shopify-section-{{ section.id }} .rf-news__subheading {
+    margin: 0 0 2rem;
+    max-width: 60ch;
+    opacity: .65;
+    line-height: 1.5;
+  }
+  #shopify-section-{{ section.id }} .rf-news__grid {
+    display: grid;
+    grid-template-columns: repeat(var(--rf-cols), minmax(0, 1fr));
+    gap: 1.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  @media (max-width: 990px) {
+    #shopify-section-{{ section.id }} .rf-news__grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (max-width: 640px) {
+    #shopify-section-{{ section.id }} .rf-news__grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+  #shopify-section-{{ section.id }} .rf-news__card {
+    display: flex;
+    border: 1px solid color-mix(in srgb, var(--rf-accent) 22%, transparent);
+    border-radius: 12px;
+    overflow: hidden;
+    background: color-mix(in srgb, var(--rf-accent) 4%, transparent);
+    transition: border-color .2s ease, transform .2s ease;
+  }
+  #shopify-section-{{ section.id }} .rf-news__card:hover {
+    border-color: var(--rf-accent);
+    transform: translateY(-2px);
+  }
+  #shopify-section-{{ section.id }} .rf-news__link {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    color: inherit;
+    text-decoration: none;
+  }
+  #shopify-section-{{ section.id }} .rf-news__thumb {
+    display: block;
+    aspect-ratio: 16 / 9;
+    background: color-mix(in srgb, var(--rf-accent) 10%, transparent);
+    overflow: hidden;
+  }
+  #shopify-section-{{ section.id }} .rf-news__thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  #shopify-section-{{ section.id }} .rf-news__body {
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+    padding: 1.1rem 1.15rem 1.25rem;
+  }
+  #shopify-section-{{ section.id }} .rf-news__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+    align-items: center;
+    font-size: .72rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    opacity: .6;
+  }
+  #shopify-section-{{ section.id }} .rf-news__source {
+    color: var(--rf-accent);
+    opacity: 1;
+    font-weight: 600;
+  }
+  #shopify-section-{{ section.id }} .rf-news__title {
+    font-size: 1.02rem;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+  #shopify-section-{{ section.id }} .rf-news__link:hover .rf-news__title {
+    color: var(--rf-accent);
+  }
+  #shopify-section-{{ section.id }} .rf-news__summary {
+    font-size: .88rem;
+    line-height: 1.5;
+    opacity: .65;
+  }
+  #shopify-section-{{ section.id }} .rf-news__updated,
+  #shopify-section-{{ section.id }} .rf-news__empty {
+    margin: 1.5rem 0 0;
+    font-size: .8rem;
+    opacity: .45;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #shopify-section-{{ section.id }} .rf-news__card { transition: none; }
+    #shopify-section-{{ section.id }} .rf-news__card:hover { transform: none; }
+  }
+{%- endstyle -%}
+
+<script>
+  (function () {
+    var root = document.getElementById('rf-news-{{ section.id }}');
+    if (!root) return;
+
+    var target = root.querySelector('[data-rf-news-target]');
+    var jsonUrl = root.dataset.jsonUrl;
+    // Server-rendered content already present, or nothing to fetch.
+    if (!target || !jsonUrl) return;
+
+    var empty = root.querySelector('[data-rf-news-empty]');
+    var updated = root.querySelector('[data-rf-news-updated]');
+    var limit = parseInt(root.dataset.limit, 10) || 6;
+    var showImages = root.dataset.showImages === 'true';
+    var showSource = root.dataset.showSource === 'true';
+    var showDate = root.dataset.showDate === 'true';
+
+    function el(tag, className, text) {
+      var node = document.createElement(tag);
+      if (className) node.className = className;
+      if (text) node.textContent = text;
+      return node;
+    }
+
+    function formatDate(iso) {
+      var d = new Date(iso);
+      if (isNaN(d.getTime())) return '';
+      return d.toLocaleDateString(undefined, {
+        year: 'numeric', month: 'short', day: 'numeric'
+      });
+    }
+
+    function render(data) {
+      var items = (data && data.items) || [];
+      if (!items.length) {
+        if (empty) empty.textContent = 'No headlines available right now.';
+        return;
+      }
+
+      items.slice(0, limit).forEach(function (item) {
+        if (!item.url || !item.title) return;
+
+        var link = el('a', 'rf-news__link');
+        link.href = item.url;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer nofollow';
+
+        if (showImages && item.image) {
+          var thumb = el('span', 'rf-news__thumb');
+          var img = new Image();
+          img.src = item.image;
+          img.alt = '';
+          img.loading = 'lazy';
+          img.referrerPolicy = 'no-referrer';
+          img.onerror = function () { thumb.remove(); };
+          thumb.appendChild(img);
+          link.appendChild(thumb);
+        }
+
+        var body = el('span', 'rf-news__body');
+        var meta = el('span', 'rf-news__meta');
+
+        if (showSource && item.source) {
+          meta.appendChild(el('span', 'rf-news__source', item.source));
+        }
+        if (showDate && item.publishedAt) {
+          var time = el('time', null, formatDate(item.publishedAt));
+          time.dateTime = item.publishedAt;
+          meta.appendChild(time);
+        }
+        if (meta.childNodes.length) body.appendChild(meta);
+
+        body.appendChild(el('span', 'rf-news__title', item.title));
+        if (item.summary) {
+          body.appendChild(el('span', 'rf-news__summary', item.summary));
+        }
+
+        link.appendChild(body);
+
+        var card = el('li', 'rf-news__card');
+        card.appendChild(link);
+        target.appendChild(card);
+      });
+
+      target.hidden = false;
+      if (empty) empty.remove();
+
+      if (updated && data.generatedAt) {
+        updated.textContent = 'Updated ' + formatDate(data.generatedAt);
+        updated.hidden = false;
+      }
+    }
+
+    fetch(jsonUrl, { cache: 'no-cache' })
+      .then(function (res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+      })
+      .then(render)
+      .catch(function () {
+        if (empty) empty.textContent = 'Headlines are temporarily unavailable.';
+      });
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "3D Printing News",
+  "tag": "section",
+  "class": "rf-news-section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "3D Printing News"
+    },
+    {
+      "type": "text",
+      "id": "subheading",
+      "label": "Subheading",
+      "default": "The week in additive manufacturing, gathered from the industry's leading publications."
+    },
+    {
+      "type": "range",
+      "id": "items_to_show",
+      "label": "Headlines to show",
+      "min": 3,
+      "max": 12,
+      "step": 1,
+      "default": 6
+    },
+    {
+      "type": "range",
+      "id": "columns_desktop",
+      "label": "Columns on desktop",
+      "min": 2,
+      "max": 4,
+      "step": 1,
+      "default": 3
+    },
+    {
+      "type": "checkbox",
+      "id": "show_images",
+      "label": "Show article images",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_source",
+      "label": "Show publication name",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_date",
+      "label": "Show publish date",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Colours"
+    },
+    {
+      "type": "color",
+      "id": "accent_color",
+      "label": "Accent",
+      "default": "#29ABE2"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background",
+      "default": "#0d0f14"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text",
+      "default": "#f0f4f8"
+    },
+    {
+      "type": "header",
+      "content": "Spacing"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "min": 0,
+      "max": 120,
+      "step": 4,
+      "unit": "px",
+      "default": 64
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "min": 0,
+      "max": 120,
+      "step": 4,
+      "unit": "px",
+      "default": 64
+    },
+    {
+      "type": "header",
+      "content": "Advanced"
+    },
+    {
+      "type": "paragraph",
+      "content": "Headlines come from the shop metafield rendr.news_3d_printing. Only set a fallback URL if you are not pushing to the metafield."
+    },
+    {
+      "type": "text",
+      "id": "json_url",
+      "label": "Fallback JSON URL",
+      "info": "Optional. Used only when the metafield is empty."
+    }
+  ],
+  "presets": [
+    {
+      "name": "3D Printing News"
+    }
+  ]
+}
+{% endschema %}

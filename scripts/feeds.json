@@ -1,0 +1,76 @@
+{
+  "_comment": "Sources for the RENDR FARM 3D printing news section. Each source lists one or more candidate feed URLs; the builder tries them in order and uses the first that parses. Add or remove sources freely — nothing else needs to change.",
+  "sources": [
+    {
+      "name": "3D Printing Industry",
+      "site": "https://www.3dprintingindustry.com/",
+      "candidates": [
+        "https://www.3dprintingindustry.com/feed/",
+        "https://3dprintingindustry.com/feed/"
+      ]
+    },
+    {
+      "name": "3DPrint.com",
+      "site": "https://3dprint.com/",
+      "candidates": [
+        "https://3dprint.com/feed/"
+      ]
+    },
+    {
+      "name": "All3DP",
+      "site": "https://all3dp.com/",
+      "candidates": [
+        "https://all3dp.com/feed/",
+        "https://all3dp.com/news/feed/"
+      ]
+    },
+    {
+      "name": "VoxelMatters",
+      "site": "https://www.voxelmatters.com/",
+      "candidates": [
+        "https://www.voxelmatters.com/feed/",
+        "https://www.3dprintingmedia.network/feed/"
+      ]
+    },
+    {
+      "name": "Fabbaloo",
+      "site": "https://www.fabbaloo.com/",
+      "candidates": [
+        "https://www.fabbaloo.com/blog?format=rss",
+        "https://www.fabbaloo.com/feed"
+      ]
+    },
+    {
+      "name": "3Dnatives",
+      "site": "https://www.3dnatives.com/en/",
+      "candidates": [
+        "https://www.3dnatives.com/en/feed/",
+        "https://www.3dnatives.com/feed/"
+      ]
+    },
+    {
+      "name": "TCT Magazine",
+      "site": "https://www.tctmagazine.com/",
+      "candidates": [
+        "https://www.tctmagazine.com/rss/all",
+        "https://www.tctmagazine.com/rss/",
+        "https://www.tctmagazine.com/feed/"
+      ]
+    },
+    {
+      "name": "Manufactur3D",
+      "site": "https://manufactur3dmag.com/",
+      "candidates": [
+        "https://manufactur3dmag.com/feed/"
+      ]
+    },
+    {
+      "name": "Additive Manufacturing Media",
+      "site": "https://www.additivemanufacturing.media/",
+      "candidates": [
+        "https://www.additivemanufacturing.media/rss/articles",
+        "https://www.additivemanufacturing.media/rss"
+      ]
+    }
+  ]
+}

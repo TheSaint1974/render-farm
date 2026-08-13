@@ -1,0 +1,63 @@
+name: Weekly 3D printing news
+
+on:
+  schedule:
+    # Mondays at 07:12 UTC (~03:12 Toronto) — fresh for the start of the week.
+    - cron: '12 7 * * 1'
+  workflow_dispatch:
+    inputs:
+      days:
+        description: 'Look-back window in days'
+        required: false
+        default: '7'
+
+concurrency:
+  group: 3d-printing-news
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Check the feed parser
+        run: node scripts/test-build-news.mjs
+
+      - name: Build the news roundup
+        run: node scripts/build-news.mjs --days "${{ github.event.inputs.days || '7' }}"
+
+      - name: Commit the refreshed roundup
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Stage first: a brand-new file is untracked and invisible to `git diff`.
+          git add data/3d-printing-news.json
+          if git diff --cached --quiet; then
+            echo "No change in this week's headlines."
+            exit 0
+          fi
+          git commit -m "Refresh 3D printing news roundup"
+          git push
+
+      - name: Publish to the Shopify storefront
+        env:
+          SHOPIFY_STORE_DOMAIN: ${{ secrets.SHOPIFY_STORE_DOMAIN }}
+          SHOPIFY_ADMIN_TOKEN: ${{ secrets.SHOPIFY_ADMIN_TOKEN }}
+        run: |
+          if [ -z "$SHOPIFY_ADMIN_TOKEN" ] || [ -z "$SHOPIFY_STORE_DOMAIN" ]; then
+            echo "Shopify secrets not configured — skipping storefront push."
+            echo "Add SHOPIFY_STORE_DOMAIN and SHOPIFY_ADMIN_TOKEN to enable it."
+            exit 0
+          fi
+          node scripts/push-to-shopify.mjs
