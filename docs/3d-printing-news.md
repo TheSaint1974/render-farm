@@ -39,8 +39,14 @@ replacing the starter content. Save.
 
 Then open the theme editor, go to the page you want it on, click
 **Add section**, and pick **3D Printing News**. Heading, colours, column count,
-and how many headlines to show are all editable there. The defaults use the
-RENDR FARM blue (`#29ABE2`) on the dark background.
+and how many headlines to show are all editable there.
+
+The defaults are built to match the live storefront: white cards with a thin
+`#e3e6ea` border and 16px corners, a centred bold heading over grey subtext, and
+a blue **Read article →** link mirroring the *Learn More →* pattern on the
+services cards. If the accent blue is not exactly right, the **Accent** colour
+picker changes the publication name, the card link and the hover border in one
+go.
 
 ### 2. Create a Shopify access token
 

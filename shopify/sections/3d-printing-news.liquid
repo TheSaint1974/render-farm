@@ -2,6 +2,10 @@
   RENDR FARM — 3D Printing News
   Renders the weekly roundup written by scripts/build-news.mjs.
 
+  Styled to match the live storefront: light background, white cards with a
+  thin neutral border and rounded corners, dark headings, grey body copy, and
+  a blue "Read article →" link matching the site's "Learn More →" pattern.
+
   Data source, in order of preference:
     1. shop.metafields.rendr.news_3d_printing  (server-rendered — preferred)
     2. the "Fallback JSON URL" setting          (fetched in the browser)
@@ -26,6 +30,7 @@
   data-show-images="{{ section.settings.show_images }}"
   data-show-source="{{ section.settings.show_source }}"
   data-show-date="{{ section.settings.show_date }}"
+  data-link-label="{{ section.settings.link_label | escape }}"
 >
   <div class="rf-news__inner">
     {%- if section.settings.heading != blank -%}
@@ -54,27 +59,35 @@
                     loading="lazy"
                     decoding="async"
                     referrerpolicy="no-referrer"
-                    onerror="this.closest('.rf-news__thumb').remove()"
                   >
                 </span>
               {%- endif -%}
 
               <span class="rf-news__body">
-                <span class="rf-news__meta">
-                  {%- if section.settings.show_source -%}
-                    <span class="rf-news__source">{{ item.source }}</span>
-                  {%- endif -%}
-                  {%- if section.settings.show_date and item.publishedAt != blank -%}
-                    <time datetime="{{ item.publishedAt }}">
-                      {{- item.publishedAt | date: '%b %-d, %Y' -}}
-                    </time>
-                  {%- endif -%}
-                </span>
+                {%- if section.settings.show_source or section.settings.show_date -%}
+                  <span class="rf-news__meta">
+                    {%- if section.settings.show_source -%}
+                      <span class="rf-news__source">{{ item.source }}</span>
+                    {%- endif -%}
+                    {%- if section.settings.show_date and item.publishedAt != blank -%}
+                      <time class="rf-news__date" datetime="{{ item.publishedAt }}">
+                        {{- item.publishedAt | date: '%b %-d, %Y' -}}
+                      </time>
+                    {%- endif -%}
+                  </span>
+                {%- endif -%}
 
                 <span class="rf-news__title">{{ item.title }}</span>
 
                 {%- if item.summary != blank -%}
                   <span class="rf-news__summary">{{ item.summary }}</span>
+                {%- endif -%}
+
+                {%- if section.settings.link_label != blank -%}
+                  <span class="rf-news__cta">
+                    {{ section.settings.link_label | escape }}
+                    <span class="rf-news__arrow" aria-hidden="true">&rarr;</span>
+                  </span>
                 {%- endif -%}
               </span>
             </a>
@@ -104,34 +117,44 @@
 {%- style -%}
   #shopify-section-{{ section.id }} .rf-news {
     --rf-accent: {{ section.settings.accent_color }};
+    --rf-border: {{ section.settings.border_color }};
+    --rf-card: {{ section.settings.card_color }};
+    --rf-text: {{ section.settings.text_color }};
+    --rf-muted: {{ section.settings.muted_text_color }};
     --rf-cols: {{ section.settings.columns_desktop }};
     padding: {{ section.settings.padding_top }}px 1.5rem {{ section.settings.padding_bottom }}px;
     background: {{ section.settings.background_color }};
-    color: {{ section.settings.text_color }};
+    color: var(--rf-text);
   }
   #shopify-section-{{ section.id }} .rf-news__inner {
     max-width: 1200px;
     margin: 0 auto;
+    text-align: {{ section.settings.heading_alignment }};
   }
   #shopify-section-{{ section.id }} .rf-news__heading {
-    margin: 0 0 .5rem;
-    font-size: clamp(1.6rem, 3.4vw, 2.4rem);
+    margin: 0 0 .75rem;
+    font-size: clamp(1.9rem, 4vw, 2.75rem);
+    font-weight: 700;
     letter-spacing: -0.02em;
     line-height: 1.15;
+    color: var(--rf-text);
   }
   #shopify-section-{{ section.id }} .rf-news__subheading {
-    margin: 0 0 2rem;
-    max-width: 60ch;
-    opacity: .65;
-    line-height: 1.5;
+    margin: 0 auto 2.5rem;
+    max-width: 58ch;
+    color: var(--rf-muted);
+    font-size: 1.02rem;
+    line-height: 1.55;
   }
+
   #shopify-section-{{ section.id }} .rf-news__grid {
     display: grid;
     grid-template-columns: repeat(var(--rf-cols), minmax(0, 1fr));
-    gap: 1.25rem;
+    gap: 1.5rem;
     margin: 0;
     padding: 0;
     list-style: none;
+    text-align: left;
   }
   @media (max-width: 990px) {
     #shopify-section-{{ section.id }} .rf-news__grid {
@@ -143,17 +166,19 @@
       grid-template-columns: minmax(0, 1fr);
     }
   }
+
   #shopify-section-{{ section.id }} .rf-news__card {
     display: flex;
-    border: 1px solid color-mix(in srgb, var(--rf-accent) 22%, transparent);
-    border-radius: 12px;
+    background: var(--rf-card);
+    border: 1px solid var(--rf-border);
+    border-radius: {{ section.settings.corner_radius }}px;
     overflow: hidden;
-    background: color-mix(in srgb, var(--rf-accent) 4%, transparent);
-    transition: border-color .2s ease, transform .2s ease;
+    transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
   }
   #shopify-section-{{ section.id }} .rf-news__card:hover {
     border-color: var(--rf-accent);
-    transform: translateY(-2px);
+    box-shadow: 0 6px 22px rgba(0, 0, 0, .07);
+    transform: translateY(-3px);
   }
   #shopify-section-{{ section.id }} .rf-news__link {
     display: flex;
@@ -162,10 +187,15 @@
     color: inherit;
     text-decoration: none;
   }
+  #shopify-section-{{ section.id }} .rf-news__link:focus-visible {
+    outline: 2px solid var(--rf-accent);
+    outline-offset: 3px;
+  }
+
   #shopify-section-{{ section.id }} .rf-news__thumb {
     display: block;
     aspect-ratio: 16 / 9;
-    background: color-mix(in srgb, var(--rf-accent) 10%, transparent);
+    background: var(--rf-border);
     overflow: hidden;
   }
   #shopify-section-{{ section.id }} .rf-news__thumb img {
@@ -174,49 +204,72 @@
     object-fit: cover;
     display: block;
   }
+
   #shopify-section-{{ section.id }} .rf-news__body {
     display: flex;
     flex-direction: column;
-    gap: .5rem;
-    padding: 1.1rem 1.15rem 1.25rem;
+    align-items: flex-start;
+    gap: .6rem;
+    padding: 1.5rem 1.5rem 1.6rem;
+    flex: 1 1 auto;
   }
   #shopify-section-{{ section.id }} .rf-news__meta {
     display: flex;
     flex-wrap: wrap;
-    gap: .5rem;
-    align-items: center;
-    font-size: .72rem;
-    letter-spacing: .08em;
+    gap: .6rem;
+    align-items: baseline;
+    font-size: .7rem;
+    letter-spacing: .1em;
     text-transform: uppercase;
-    opacity: .6;
   }
   #shopify-section-{{ section.id }} .rf-news__source {
     color: var(--rf-accent);
-    opacity: 1;
     font-weight: 600;
+  }
+  #shopify-section-{{ section.id }} .rf-news__date {
+    color: var(--rf-muted);
   }
   #shopify-section-{{ section.id }} .rf-news__title {
-    font-size: 1.02rem;
-    font-weight: 600;
-    line-height: 1.35;
-  }
-  #shopify-section-{{ section.id }} .rf-news__link:hover .rf-news__title {
-    color: var(--rf-accent);
+    font-size: 1.22rem;
+    font-weight: 700;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+    color: var(--rf-text);
   }
   #shopify-section-{{ section.id }} .rf-news__summary {
-    font-size: .88rem;
-    line-height: 1.5;
-    opacity: .65;
+    font-size: .95rem;
+    line-height: 1.55;
+    color: var(--rf-muted);
   }
+  #shopify-section-{{ section.id }} .rf-news__cta {
+    margin-top: auto;
+    padding-top: .5rem;
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    color: var(--rf-accent);
+    font-size: .98rem;
+    font-weight: 500;
+  }
+  #shopify-section-{{ section.id }} .rf-news__arrow {
+    transition: transform .2s ease;
+  }
+  #shopify-section-{{ section.id }} .rf-news__link:hover .rf-news__arrow {
+    transform: translateX(4px);
+  }
+
   #shopify-section-{{ section.id }} .rf-news__updated,
   #shopify-section-{{ section.id }} .rf-news__empty {
-    margin: 1.5rem 0 0;
-    font-size: .8rem;
-    opacity: .45;
+    margin: 1.75rem 0 0;
+    font-size: .82rem;
+    color: var(--rf-muted);
   }
+
   @media (prefers-reduced-motion: reduce) {
-    #shopify-section-{{ section.id }} .rf-news__card { transition: none; }
+    #shopify-section-{{ section.id }} .rf-news__card,
+    #shopify-section-{{ section.id }} .rf-news__arrow { transition: none; }
     #shopify-section-{{ section.id }} .rf-news__card:hover { transform: none; }
+    #shopify-section-{{ section.id }} .rf-news__link:hover .rf-news__arrow { transform: none; }
   }
 {%- endstyle -%}
 
@@ -224,6 +277,26 @@
   (function () {
     var root = document.getElementById('rf-news-{{ section.id }}');
     if (!root) return;
+
+    // Publishers rotate and expire their images. Drop the thumbnail rather
+    // than leaving an empty box behind — server-rendered cards included.
+    function dropOnError(img) {
+      img.addEventListener('error', function () {
+        var thumb = img.closest('.rf-news__thumb');
+        if (thumb) thumb.remove();
+      });
+    }
+    Array.prototype.forEach.call(
+      root.querySelectorAll('.rf-news__thumb img'),
+      function (img) {
+        if (img.complete && img.naturalWidth === 0) {
+          var thumb = img.closest('.rf-news__thumb');
+          if (thumb) thumb.remove();
+          return;
+        }
+        dropOnError(img);
+      }
+    );
 
     var target = root.querySelector('[data-rf-news-target]');
     var jsonUrl = root.dataset.jsonUrl;
@@ -236,6 +309,7 @@
     var showImages = root.dataset.showImages === 'true';
     var showSource = root.dataset.showSource === 'true';
     var showDate = root.dataset.showDate === 'true';
+    var linkLabel = root.dataset.linkLabel || '';
 
     function el(tag, className, text) {
       var node = document.createElement(tag);
@@ -286,7 +360,7 @@
           meta.appendChild(el('span', 'rf-news__source', item.source));
         }
         if (showDate && item.publishedAt) {
-          var time = el('time', null, formatDate(item.publishedAt));
+          var time = el('time', 'rf-news__date', formatDate(item.publishedAt));
           time.dateTime = item.publishedAt;
           meta.appendChild(time);
         }
@@ -295,6 +369,14 @@
         body.appendChild(el('span', 'rf-news__title', item.title));
         if (item.summary) {
           body.appendChild(el('span', 'rf-news__summary', item.summary));
+        }
+
+        if (linkLabel) {
+          var cta = el('span', 'rf-news__cta', linkLabel);
+          var arrow = el('span', 'rf-news__arrow', '→');
+          arrow.setAttribute('aria-hidden', 'true');
+          cta.appendChild(arrow);
+          body.appendChild(cta);
         }
 
         link.appendChild(body);
@@ -344,6 +426,23 @@
       "default": "The week in additive manufacturing, gathered from the industry's leading publications."
     },
     {
+      "type": "select",
+      "id": "heading_alignment",
+      "label": "Heading alignment",
+      "options": [
+        { "value": "left", "label": "Left" },
+        { "value": "center", "label": "Centred" }
+      ],
+      "default": "center"
+    },
+    {
+      "type": "text",
+      "id": "link_label",
+      "label": "Card link text",
+      "default": "Read article",
+      "info": "Leave empty to hide the link line. Matches the \"Learn More →\" style used elsewhere on the site."
+    },
+    {
       "type": "range",
       "id": "items_to_show",
       "label": "Headlines to show",
@@ -387,23 +486,52 @@
       "type": "color",
       "id": "accent_color",
       "label": "Accent",
-      "default": "#29ABE2"
+      "default": "#5BC2EC",
+      "info": "Used for the publication name, the card link and hover borders."
     },
     {
       "type": "color",
       "id": "background_color",
-      "label": "Background",
-      "default": "#0d0f14"
+      "label": "Section background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "card_color",
+      "label": "Card background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "border_color",
+      "label": "Card border",
+      "default": "#e3e6ea"
     },
     {
       "type": "color",
       "id": "text_color",
-      "label": "Text",
-      "default": "#f0f4f8"
+      "label": "Headings",
+      "default": "#3f3f46"
+    },
+    {
+      "type": "color",
+      "id": "muted_text_color",
+      "label": "Body text",
+      "default": "#6b7280"
     },
     {
       "type": "header",
-      "content": "Spacing"
+      "content": "Layout"
+    },
+    {
+      "type": "range",
+      "id": "corner_radius",
+      "label": "Corner radius",
+      "min": 0,
+      "max": 28,
+      "step": 2,
+      "unit": "px",
+      "default": 16
     },
     {
       "type": "range",
@@ -413,7 +541,7 @@
       "max": 120,
       "step": 4,
       "unit": "px",
-      "default": 64
+      "default": 72
     },
     {
       "type": "range",
@@ -423,7 +551,7 @@
       "max": 120,
       "step": 4,
       "unit": "px",
-      "default": 64
+      "default": 72
     },
     {
       "type": "header",
